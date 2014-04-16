@@ -1,0 +1,87 @@
+<?php
+/**
+ * @file
+ *
+ * Add a textarea to set zurb foundation classes per block and per page
+ * @TODO allow use of info file to set responsives classes ? (for staging)
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function okcfoundation_class_permission() {
+  return array(
+    'administer block responsive classes' => array(
+      'title' => t('Administer block responsive classes'),
+      'description' => t('Set CSS responsive zurb foundation classes for blocks.'),
+    ),
+  );
+}
+
+function okcfoundation_form_alter(&$form, &$form_state, $form_id) {
+  if (user_access('administer block responsive classes') && ($form_id == 'block_admin_configure' || $form_id == 'block_add_block_form')) {
+    $form['#submit'][] = 'okcfoundation_block_submit';
+    // Load statically cached block object used to display the form.
+    $block = block_load($form['module']['#value'], $form['delta']['#value']);
+    $form['settings']['responsive_class'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Responsive classes'),
+      '#default_value' => isset($block->responsive_class) ? $block->responsive_class : '',
+      '#description' => t('Responsive layout information fro this block'),
+      '#maxlength' => 255,
+    );
+  }
+}
+
+function okcfoundation_block_submit($form, $form_state) {
+  if ($form_state['values']['form_id'] == 'block_admin_configure' || $form_state['values']['form_id'] == 'block_add_block_form') {
+    // Only save if value has changed.
+    if (isset($form_state['values']['responsive_class']) && $form['settings']['responsive_class']['#default_value'] != $form_state['values']['responsive_class'] && user_access('administer blocks')) {
+      db_update('block')
+        ->fields(array('responsive_class' => $form_state['values']['responsive_class']))
+        ->condition('module', $form_state['values']['module'])
+        ->condition('delta', $form_state['values']['delta'])
+        ->execute();
+      // Flush all context module cache to use the updated responsive_class.
+      if (module_exists('context')) {
+        cache_clear_all('context', 'cache', TRUE);
+      }
+    }
+  }
+}
+
+/**
+ * Implements theme_preprocess_block().
+ *
+ * Extend block's classes with any user defined responsive classes.
+ */
+function okcfoundation_preprocess_block(&$vars) {
+  $block = $vars['block'];
+  if (isset($block->responsive_class) && $block->responsive_class != '') {
+
+    // get our datas per path
+    $datas = drupal_parse_info_format($block->responsive_class);
+
+    // special case : * mean "for all pages". remove this key if exist
+    // or drupal_match_path will complain
+    if (isset($datas['*'])) {
+      $block_classes = $datas['*'];
+      unset($datas['*']);
+    }
+
+    // now, let see if user has defined some classes for current_page
+    // currentlty, node/* will win over node/6 if node/* is in first place.
+    // It means we have to put first the most specific classes or it won't work as expected
+    foreach ($datas as $path => $classes) {
+      if(drupal_match_path($_GET['q'], $path)) {
+        $block_classes = $classes;
+        break;
+      }
+    }
+
+    if ($block_classes) {
+      $vars['classes_array'] = array_merge($vars['classes_array'], explode(' ', $block_classes));
+    }
+  }
+
+}
