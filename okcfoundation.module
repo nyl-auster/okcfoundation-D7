@@ -6,6 +6,14 @@
  * @TODO allow use of info file to set responsives classes ? (for staging)
  */
 
+function okcfoundation_get_layout_from_info_file() {
+  $themes = list_themes();
+  $theme = $themes[$GLOBALS['theme']];
+  if (isset($theme->info['responsive_blocks'])) {
+    return $theme->info['responsive_blocks'];
+  }
+}
+
 /**
  * Implements hook_permission().
  */
@@ -56,32 +64,49 @@ function okcfoundation_block_submit($form, $form_state) {
  * Extend block's classes with any user defined responsive classes.
  */
 function okcfoundation_preprocess_block(&$vars) {
+
+  static $responsive_blocks = array();
+
   $block = $vars['block'];
-  if (isset($block->responsive_class) && $block->responsive_class != '') {
+  $block_classes = '';
+  $datas = array();
 
-    // get our datas per path
+  if (!$responsive_blocks) {
+    $responsive_blocks = okcfoundation_get_layout_from_info_file();
+  }
+
+  // if responsive classes have been found in database. Database win
+  // over theme info files.
+  if (isset($block->responsive_class) && trim($block->responsive_class) != '') {
     $datas = drupal_parse_info_format($block->responsive_class);
+  }
+  // else, look for informations for this blocks in theme info files
+  elseif (isset($responsive_blocks[$block->delta])) {
+    $datas = $responsive_blocks[$block->delta];
+  }
 
-    // special case : * mean "for all pages". remove this key if exist
-    // or drupal_match_path will complain
-    if (isset($datas['*'])) {
-      $block_classes = $datas['*'];
-      unset($datas['*']);
-    }
+  // do nothing if no datas are found anywhere
+  if (!$datas) return;
 
-    // now, let see if user has defined some classes for current_page
-    // currentlty, node/* will win over node/6 if node/* is in first place.
-    // It means we have to put first the most specific classes or it won't work as expected
-    foreach ($datas as $path => $classes) {
-      if(drupal_match_path($_GET['q'], $path)) {
-        $block_classes = $classes;
-        break;
-      }
-    }
+  // special case : * mean "for all pages". remove this key if exist
+  // or drupal_match_path() will complain
+  if (isset($datas['*'])) {
+    $block_classes = $datas['*'];
+    unset($datas['*']);
+  }
 
-    if ($block_classes) {
-      $vars['classes_array'] = array_merge($vars['classes_array'], explode(' ', $block_classes));
+  // now, let see if user has defined some classes for current_page
+  // currentlty, node/* will win over node/6 if node/* is in first place.
+  // It means we have to put first the most specific classes or it won't work as expected
+  foreach ($datas as $path => $classes) {
+    if(drupal_match_path($_GET['q'], $path)) {
+      $block_classes = $classes;
+      break;
     }
+  }
+
+  if ($block_classes) {
+    $vars['classes_array'] = array_merge($vars['classes_array'], explode(' ', $block_classes));
   }
 
 }
