@@ -35,7 +35,7 @@ function okcfoundation_form_alter(&$form, &$form_state, $form_id) {
       '#type' => 'textarea',
       '#title' => t('Responsive classes'),
       '#default_value' => isset($block->responsive_class) ? $block->responsive_class : '',
-      '#description' => t('Responsive layout information fro this block'),
+      '#description' => t('Responsive layout information for this block'),
       '#maxlength' => 255,
     );
   }
