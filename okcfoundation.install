@@ -1,9 +1,10 @@
 <?php
 
-define('OKCFOUNDATION_FIELD_NAME', 'responsive_class');
+define('OKCFOUNDATION_FIELD_NAME', 'okcfoundation_classes');
 
 /**
  * Implements hook_schema_alter()
+ *
  * @param $schema
  */
 function okcfoundation_schema_alter(&$schema) {
@@ -24,12 +25,16 @@ function okcfoundation_uninstall() {
   db_drop_field('block', OKCFOUNDATION_FIELD_NAME);
 }
 
+/**
+ * responsive_class field definition.
+ * @return array
+ */
 function _okcfoundation_field_definition() {
   return array(
     'type' => 'varchar',
     'length' => 255,
     'not null' => TRUE,
     'default' => '',
-    'description' => 'Responsive datas.',
+    'description' => 'Zurb foundation classes.',
   );
 }
