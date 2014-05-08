@@ -19,8 +19,8 @@
  * Additionnaly, you may use your theme info file to register your
  * block grid informations, like this :
  *
- * okcfoundation_classes[block-15][*] = large-12 columns
- * okcfoundation_classes[user-online][<front>] = large-1 columns
+ * okclayout_classes[block-15][*] = large-12 columns
+ * okclayout_classes[user-online][<front>] = large-1 columns
  *
  * Where "block-15" is "module-delta"; "*" is the targeted page and "large-12 columns" is foundation classes.
  *
@@ -32,10 +32,55 @@
  * way to deploy configuration saved in textarea.
  */
 
+function okclayout_block_info() {
+  // This example comes from node.module.
+  $blocks['site-title'] = array(
+    'info' => t('[OKC Layout] Display site title'),
+  );
+  $blocks['site-slogan'] = array(
+    'info' => t('[OKC Layout] Display site slogan'),
+  );
+  $blocks['site-breadcrumb'] = array(
+    'info' => t('[OKC Layout] Display breadcrumb'),
+  );
+  $blocks['site-messages'] = array(
+    'info' => t('[OKC Layout] Display site messages'),
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view()
+ * @param string $delta
+ * @return array
+ */
+function okclayout_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'site-title':
+      $block['subject'] = t('[OKC Layout] Site title');
+      $block['content'] = variable_get('site_name');
+      break;
+    case 'site-slogan':
+      $block['subject'] = t('[OKC Layout] Site slogan');
+      $block['content'] = variable_get('site_slogan');
+      break;
+    case 'site-breadcrumb':
+      $block['subject'] = t('[OKC Layout] Breadcrumb');
+      $block['content'] = theme('breadcrumb', drupal_get_breadcrumb());
+      break;
+    case 'site-messages':
+      $block['subject'] = t('[OKC Layout] Site messages');
+      $block['content'] = theme('status_messages', drupal_get_messages());
+      break;
+  }
+  return $block;
+}
+
 /**
  * Implements hook_permission().
  */
-function okcfoundation_class_permission() {
+function okclayout_class_permission() {
   return array(
     'administer block responsive classes' => array(
       'title' => t('Administer block responsive classes'),
@@ -47,23 +92,23 @@ function okcfoundation_class_permission() {
 /**
  * Implements hook_form_alter()
  */
-function okcfoundation_form_alter(&$form, &$form_state, $form_id) {
+function okclayout_form_alter(&$form, &$form_state, $form_id) {
   if (user_access('administer block responsive classes') && ($form_id == 'block_admin_configure' || $form_id == 'block_add_block_form')) {
-    $form['#submit'][] = 'okcfoundation_block_submit';
+    $form['#submit'][] = 'okclayout_block_submit';
     $block = block_load($form['module']['#value'], $form['delta']['#value']);
     // add our configuration form, a simple textarea for now
-    okcfoundation_block_expert_form($form, $form_state, $block);
+    okclayout_block_expert_form($form, $form_state, $block);
   }
 }
 
 /**
  * Configuration form to set zurb classes
  */
-function okcfoundation_block_expert_form(&$form, &$form_state, $block) {
-  $form['settings']['okcfoundation_classes'] = array(
+function okclayout_block_expert_form(&$form, &$form_state, $block) {
+  $form['settings']['okclayout_classes'] = array(
     '#type' => 'textarea',
     '#title' => t('Responsive classes'),
-    '#default_value' => isset($block->okcfoundation_classes) ? $block->okcfoundation_classes : '',
+    '#default_value' => isset($block->okclayout_classes) ? $block->okclayout_classes : '',
     '#description' => t('Set css foundation classes for this block. As you may wish to set different width for specific pages, this must be of the following form : {page} = classes <br />
       example :<br /> <strong>'
       . htmlentities('<front>') . '= small-12 large-6 columns<br/><br/></strong>
@@ -81,7 +126,7 @@ function okcfoundation_block_expert_form(&$form, &$form_state, $block) {
  * @param $config
  * @return mixed
  */
-function _okcfoundation_normalize_format($config) {
+function _okclayout_normalize_format($config) {
   // make sure newlines don't mess our interpretation of config...
   $lines  = array_filter(explode("\n", trim($config)));
   foreach ($lines as $i => $line) {
@@ -101,14 +146,14 @@ function _okcfoundation_normalize_format($config) {
  * @param $form
  * @param $form_state
  */
-function okcfoundation_block_submit($form, $form_state) {
-  $config = _okcfoundation_normalize_format($form_state['values']['okcfoundation_classes']);
+function okclayout_block_submit($form, $form_state) {
+  $config = _okclayout_normalize_format($form_state['values']['okclayout_classes']);
   db_update('block')
-    ->fields(array('okcfoundation_classes' => $config))
+    ->fields(array('okclayout_classes' => $config))
     ->condition('module', $form_state['values']['module'])
     ->condition('delta', $form_state['values']['delta'])
     ->execute();
-  // Flush all context module cache to use the updated okcfoundation_classes.
+  // Flush all context module cache to use the updated okclayout_classes.
   if (module_exists('context')) {
     cache_clear_all('context', 'cache', TRUE);
   }
@@ -120,9 +165,9 @@ function okcfoundation_block_submit($form, $form_state) {
  * Database configuration overrides classes defined in theme .info file
  * @param $delta
  */
-function okcfoundation_block_get_foundation_classes($delta) {
+function okclayout_block_get_foundation_classes($delta) {
   // first check if we find classes for this blocks in the theme info file
-  $foundation_classes = okcfoundation_get_block_classes_from_info_files();
+  $foundation_classes = okclayout_get_block_classes_from_info_files();
   if (isset($foundation_classes[$delta])) {
     return $foundation_classes[$delta];
   }
@@ -132,15 +177,15 @@ function okcfoundation_block_get_foundation_classes($delta) {
  * Get responsive blocks information in theme info file (if any)
  * @return array if responsive_blocks key is found, null otherwise
  */
-function okcfoundation_get_block_classes_from_info_files() {
+function okclayout_get_block_classes_from_info_files() {
 
   static $foudation_classes = array();
   if ($foudation_classes) return $foudation_classes;
 
   $themes = list_themes();
   $theme = $themes[$GLOBALS['theme']];
-  if (isset($theme->info['okcfoundation_classes'])) {
-    $foudation_classes = $theme->info['okcfoundation_classes'];
+  if (isset($theme->info['okclayout'])) {
+    $foudation_classes = $theme->info['okclayout'];
   }
   return $foudation_classes;
 
@@ -151,7 +196,7 @@ function okcfoundation_get_block_classes_from_info_files() {
  *
  * Extend block's classes with any user defined responsive classes.
  */
-function okcfoundation_preprocess_block(&$vars) {
+function okclayout_preprocess_block(&$vars) {
 
   static $responsive_blocks = array();
 
@@ -160,13 +205,13 @@ function okcfoundation_preprocess_block(&$vars) {
   $datas = array();
 
   if (!$responsive_blocks) {
-    $responsive_blocks = okcfoundation_get_block_classes_from_info_files();
+    $responsive_blocks = okclayout_get_block_classes_from_info_files();
   }
 
   // if responsive classes have been found in database. Database win
   // over theme info files.
-  if (isset($block->okcfoundation_classes) && trim($block->okcfoundation_classes) != '') {
-    $datas = drupal_parse_info_format($block->okcfoundation_classes);
+  if (isset($block->okclayout_classes) && trim($block->okclayout) != '') {
+    $datas = drupal_parse_info_format($block->okclayout);
     //if ($block->delta == '15') {
       //var_dump($datas);exit;
     //}
@@ -204,37 +249,37 @@ function okcfoundation_preprocess_block(&$vars) {
 }
 
 /*
-function okcfoundation_ui_block_form(&$form, &$form_state, $block) {
+function okclayout_ui_block_form(&$form, &$form_state, $block) {
 
   // Per-path visibility.
-  $form['settings']['okcfoundation_classes'] = array(
+  $form['settings']['okclayout_classes'] = array(
     '#type' => 'vertical_tabs',
     '#tree' => TRUE,
   );
-  foreach (okcfoundation_breakpoints_info() as $size_id => $size_name) {
+  foreach (okclayout_breakpoints_info() as $size_id => $size_name) {
 
-    $form['settings']['okcfoundation_classes'][$size_id] = array(
+    $form['settings']['okclayout_classes'][$size_id] = array(
       '#type' => 'fieldset',
       '#title' => t($size_name),
-      '#group' => 'okcfoundation_classes',
+      '#group' => 'okclayout_classes',
       '#weight' => 0,
     );
 
     foreach (range(1, 15) as $i) {
 
-      $form['settings']['okcfoundation_classes'][$size_id][$i] = array(
+      $form['settings']['okclayout_classes'][$size_id][$i] = array(
         '#type' => 'fieldset',
         '#title' => 'test',
         '#collapsible' => TRUE,
         '#collapsed' => $i == 1 ? FALSE : TRUE,
       );
-      $form['settings']['okcfoundation_classes'][$size_id][$i]['grid_width'] = array(
+      $form['settings']['okclayout_classes'][$size_id][$i]['grid_width'] = array(
         '#type' => 'select',
         '#title' => t('I want a with of'),
         '#options' => range(1, 12),
         '#weight' => 0,
       );
-      $form['settings']['okcfoundation_classes'][$size_id][$i]['page'] = array(
+      $form['settings']['okclayout_classes'][$size_id][$i]['page'] = array(
         '#type' => 'textfield',
         '#title' => t('For those pages'),
         '#default_value' => '',

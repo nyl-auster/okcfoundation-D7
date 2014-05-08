@@ -45,7 +45,7 @@ MORE ON CONFIGURATION
  Where "block-15" is "module-delta"; "*" is the targeted page and "large-12 columns" is foundation classes.
  module and delta are displayed in html classes (ex : for block-user-online, module is "user" and delta is "online"
  or in the block url configuration :
- 
+
  for "admin/structure/block/manage/block/15/configure?destination=node", module is "block" and delta is "15".
 
  If a block as classes in both info files and block configuration page, the block configuration
