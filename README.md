@@ -1,7 +1,7 @@
-OKCFOUNDATION
+OKC LAYOUT
 ---------------
 
-OKC Foundation is an additionnal module for OKC Design theme.
+OKC Layout is an additionnal module for OKC Design theme.
 
 https://github.com/nyl-auster/okcdesign
 
