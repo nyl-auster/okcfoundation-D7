@@ -25,11 +25,11 @@ MORE ON CONFIGURATION
 
  foundation classes MUST be specified in drupal ini format in
  the textarea from block configuration page.
- @code
+```
    * = large-12 columns
    <front> = small-6 columns end
    node/4/* = large-12 columns
- @endcode
+```
 
  key is the page targeted, and value is the foundation classes the block will use.
  "*" is a special wildcard meaning "for all pages".
@@ -37,10 +37,16 @@ MORE ON CONFIGURATION
  Additionnaly, you may use your theme info file to register your
  block grid informations, like this :
 
+```
  okcfoundation_classes[block-15][*] = large-12 columns
  okcfoundation_classes[user-online][<front>] = large-1 columns
+```
 
  Where "block-15" is "module-delta"; "*" is the targeted page and "large-12 columns" is foundation classes.
+ module and delta are displayed in html classes (ex : for block-user-online, module is "user" and delta is "online"
+ or in the block url configuration :
+ 
+ for "admin/structure/block/manage/block/15/configure?destination=node", module is "block" and delta is "15".
 
  If a block as classes in both info files and block configuration page, the block configuration
  page wins againts theme info file.
