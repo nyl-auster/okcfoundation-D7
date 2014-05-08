@@ -53,7 +53,6 @@ function okcfoundation_form_alter(&$form, &$form_state, $form_id) {
     $block = block_load($form['module']['#value'], $form['delta']['#value']);
     // add our configuration form, a simple textarea for now
     okcfoundation_block_expert_form($form, $form_state, $block);
-
   }
 }
 
