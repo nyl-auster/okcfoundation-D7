@@ -4,25 +4,17 @@
  *
  * Add a textarea in block configuration to set responsive classes
  * for zurb foundation css framework. Use with okcdesign theme.
- *
- * foundation classes MUST be specified in drupal ini format in
- * the textarea from block configuration page.
  * @code
- *   * = large-12 columns
- *   <front> = small-6 columns end
- *   node/4/* = large-12 columns
+ *   small-6 large-12 columns
  * @endcode
- *
- * key is the page targeted, and value is the foundation classes the block will use.
- * "*" is a special wildcard meaning "for all pages".
  *
  * Additionnaly, you may use your theme info file to register your
  * block grid informations, like this :
  *
- * okclayout_classes[block-15][*] = large-12 columns
- * okclayout_classes[user-online][<front>] = large-1 columns
+ * okclayout_foundation_classes[block-15] = large-12 columns
+ * okclayout_foundation_classes[user-online] = large-1 columns
  *
- * Where "block-15" is "module-delta"; "*" is the targeted page and "large-12 columns" is foundation classes.
+ * Where "block-15" is "module-delta" and "large-12 columns" is foundation classes.
  *
  * If a block as classes in both info files and block configuration page, the block configuration
  * page wins againts theme info file.
@@ -31,6 +23,35 @@
  * Using themeinfo file is a nice way to version your grids layout; there is no easy
  * way to deploy configuration saved in textarea.
  */
+
+/**
+ * Implements hook_custom_theme()
+ */
+function okclayout_custom_theme() {
+  $layouts = okclayout_get_layouts(variable_get('theme_default'));
+
+  foreach ($layouts as $theme_name => $datas) {
+
+    // include template.php file if exists, so we can check if it implements
+    // hook_okclayout_condition(). If file template.php does not exists, abort.
+    $templatephp_file = str_replace($datas->name . '.info', 'template.php', $datas->filename);
+    include_once($templatephp_file);
+    if (!is_readable($templatephp_file)) continue;
+    $function = $theme_name. '_okclayout_condition';
+
+    // hook_okclayout_condition does not exists, abort.
+    if (!function_exists($function)) continue;
+
+    // if hook_okclayout_condition() return TRUE, set this subtheme as
+    // the current active theme for this page.
+    $result = $function();
+    if ($result) {
+      return $theme_name;
+    }
+
+  }
+
+}
 
 function okclayout_block_info() {
   // This example comes from node.module.
@@ -105,39 +126,16 @@ function okclayout_form_alter(&$form, &$form_state, $form_id) {
  * Configuration form to set zurb classes
  */
 function okclayout_block_expert_form(&$form, &$form_state, $block) {
-  $form['settings']['okclayout_classes'] = array(
+  $form['settings']['okclayout_foundation_classes'] = array(
     '#type' => 'textarea',
-    '#title' => t('Responsive classes'),
-    '#default_value' => isset($block->okclayout_classes) ? $block->okclayout_classes : '',
-    '#description' => t('Set css foundation classes for this block. As you may wish to set different width for specific pages, this must be of the following form : {page} = classes <br />
-      example :<br /> <strong>'
-      . htmlentities('<front>') . '= small-12 large-6 columns<br/><br/></strong>
-      To set classes for all pages, use wildcard "*" :<br/>
-      <strong>* = small-12 large-6 columns</strong><br/><br/>
-      Feel free to use any foundation classes you wish, check foundation docs.'
-      ),
+    '#title' => t('Foundation classes'),
+    '#default_value' => isset($block->okclayout_foundation_classes) ? $block->okclayout_foundation_classes : '',
+    '#description' => t('Set css foundation grid classes for this block. example: <br/>
+      <strong>small-12 medium-8 large-12 columns</strong><br/>
+      These classes will be added to html block classes'
+    ),
     '#weight' => 0,
   );
-}
-
-/**
- * If use entered only "small-12 medium-6 large-8 columns" considers he wants
- * to use " * = small-12 medium-6 large-8 columns" to make his life easier.
- * @param $config
- * @return mixed
- */
-function _okclayout_normalize_format($config) {
-  // make sure newlines don't mess our interpretation of config...
-  $lines  = array_filter(explode("\n", trim($config)));
-  foreach ($lines as $i => $line) {
-    $array = explode('=', $line);
-    if (count($array) == 1) {
-      $lines[$i] = '* = ' . $line;
-    }
-  }
-  $config = (implode("\r\n", $lines));
-  var_dump($config);
-  return $config;
 }
 
 /**
@@ -147,29 +145,15 @@ function _okclayout_normalize_format($config) {
  * @param $form_state
  */
 function okclayout_block_submit($form, $form_state) {
-  $config = _okclayout_normalize_format($form_state['values']['okclayout_classes']);
+  $classes = $form_state['values']['okclayout_foundation_classes'];
   db_update('block')
-    ->fields(array('okclayout_classes' => $config))
+    ->fields(array('okclayout_foundation_classes' => $classes))
     ->condition('module', $form_state['values']['module'])
     ->condition('delta', $form_state['values']['delta'])
     ->execute();
-  // Flush all context module cache to use the updated okclayout_classes.
+  // Flush all context module cache to use the updated okclayout_foundation_classes.
   if (module_exists('context')) {
     cache_clear_all('context', 'cache', TRUE);
-  }
-}
-
-/**
- * Load foundation classes for a given block.
- * Configuration may be stored in theme .info file or in database.
- * Database configuration overrides classes defined in theme .info file
- * @param $delta
- */
-function okclayout_block_get_foundation_classes($delta) {
-  // first check if we find classes for this blocks in the theme info file
-  $foundation_classes = okclayout_get_block_classes_from_info_files();
-  if (isset($foundation_classes[$delta])) {
-    return $foundation_classes[$delta];
   }
 }
 
@@ -177,18 +161,38 @@ function okclayout_block_get_foundation_classes($delta) {
  * Get responsive blocks information in theme info file (if any)
  * @return array if responsive_blocks key is found, null otherwise
  */
-function okclayout_get_block_classes_from_info_files() {
+function okclayout_get_block_classes_from_info_file() {
 
-  static $foudation_classes = array();
-  if ($foudation_classes) return $foudation_classes;
+  static $okclayout_foundation_classes = array();
+  if ($okclayout_foundation_classes) return $okclayout_foundation_classes;
 
   $themes = list_themes();
   $theme = $themes[$GLOBALS['theme']];
-  if (isset($theme->info['okclayout'])) {
-    $foudation_classes = $theme->info['okclayout'];
+  if (isset($theme->info['okclayout_block_classes'])) {
+    $okclayout_foundation_classes = $theme->info['okclayout_block_classes'];
   }
-  return $foudation_classes;
+  return $okclayout_foundation_classes;
 
+}
+
+function okclayout_get_block_classes($block) {
+  $classes = NULL;
+
+  // if responsive classes have been found in database. Database win
+  // over theme info files.
+  if (isset($block->okclayout_foundation_classes) && trim($block->okclayout_foundation_classes) != '') {
+    $classes = $block->okclayout_foundation_classes;
+  }
+
+  // else, look for informations for this blocks in theme info files
+  else {
+    $okclayout_foundation_classes = okclayout_get_block_classes_from_info_file();
+    if (!empty($okclayout_foundation_classes["$block->module-$block->delta"])) {
+      $classes = $okclayout_foundation_classes["$block->module-$block->delta"];
+    }
+  }
+
+  return $classes;
 }
 
 /**
@@ -197,97 +201,34 @@ function okclayout_get_block_classes_from_info_files() {
  * Extend block's classes with any user defined responsive classes.
  */
 function okclayout_preprocess_block(&$vars) {
-
-  static $responsive_blocks = array();
-
-  $block = $vars['block'];
-  $block_classes = '';
-  $datas = array();
-
-  if (!$responsive_blocks) {
-    $responsive_blocks = okclayout_get_block_classes_from_info_files();
-  }
-
-  // if responsive classes have been found in database. Database win
-  // over theme info files.
-  if (isset($block->okclayout_classes) && trim($block->okclayout) != '') {
-    $datas = drupal_parse_info_format($block->okclayout);
-    //if ($block->delta == '15') {
-      //var_dump($datas);exit;
-    //}
-  }
-  // else, look for informations for this blocks in theme info files
-  elseif (isset($responsive_blocks["$block->module-$block->delta"])) {
-    $datas = $responsive_blocks["$block->module-$block->delta"];
-  }
-
-  // do nothing if no datas are found anywhere
-  if (!$datas) return;
-
-  // special case : * mean "for all pages". remove this key if exist
-  // or drupal_match_path() will complain
-  if (isset($datas['*'])) {
-    $block_classes = $datas['*'];
-    unset($datas['*']);
-  }
-
-  // now, let see if user has defined some classes for current_page
-  // currentlty, node/* will win over node/6 if node/* is in first place.
-  // It means we have to put first the most specific classes or it won't work as expected
-  foreach ($datas as $path => $classes) {
-    if(drupal_match_path($_GET['q'], $path)) {
-      $block_classes = $classes;
-      break;
-    }
-  }
-
-  // time so set our magic classes !
-  if ($block_classes) {
-    $vars['classes_array'] = array_merge($vars['classes_array'], explode(' ', $block_classes));
-  }
-
-}
-
-/*
-function okclayout_ui_block_form(&$form, &$form_state, $block) {
-
-  // Per-path visibility.
-  $form['settings']['okclayout_classes'] = array(
-    '#type' => 'vertical_tabs',
-    '#tree' => TRUE,
-  );
-  foreach (okclayout_breakpoints_info() as $size_id => $size_name) {
-
-    $form['settings']['okclayout_classes'][$size_id] = array(
-      '#type' => 'fieldset',
-      '#title' => t($size_name),
-      '#group' => 'okclayout_classes',
-      '#weight' => 0,
-    );
-
-    foreach (range(1, 15) as $i) {
-
-      $form['settings']['okclayout_classes'][$size_id][$i] = array(
-        '#type' => 'fieldset',
-        '#title' => 'test',
-        '#collapsible' => TRUE,
-        '#collapsed' => $i == 1 ? FALSE : TRUE,
-      );
-      $form['settings']['okclayout_classes'][$size_id][$i]['grid_width'] = array(
-        '#type' => 'select',
-        '#title' => t('I want a with of'),
-        '#options' => range(1, 12),
-        '#weight' => 0,
-      );
-      $form['settings']['okclayout_classes'][$size_id][$i]['page'] = array(
-        '#type' => 'textfield',
-        '#title' => t('For those pages'),
-        '#default_value' => '',
-        '#weight' => 0,
-      );
-
-
-    }
+  if ($classes = okclayout_get_block_classes($vars['block'])) {
+    $vars['classes_array'] = array_merge($vars['classes_array'], array_filter(explode(' ', $classes)));
   }
 }
-*/
+
+/**
+ * Get layouts for a theme.
+ * Layouts are simply drupal sub theme for current theme, with a okclayout = TRUE
+ * in info file.
+ *
+ * A layout MUST implements a hook_okclayout_condition() that will return TRUE
+ * if this layout should be active.
+ *
+ * In others words, with switch theme on the fly, if theme is matching condition.
+ *
+ * @param $base_theme : machine name of base theme.
+ * @return mixed
+ */
+function okclayout_get_layouts($base_theme) {
+
+  static $layouts = array();
+  if ($layouts) return $layouts;
+
+  $themes = list_themes();
+  foreach ($themes as $theme_name => $theme) {
+    if (!empty($theme->info['okclayout']) && (isset($theme->info['base theme']) && $theme->info['base theme'] == $base_theme)) {
+      $layouts[$theme_name] = $theme;
+    }
+  }
+  return $layouts;
+}

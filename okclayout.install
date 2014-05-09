@@ -1,6 +1,6 @@
 <?php
 
-define('okclayout_FIELD_NAME', 'okclayout_classes');
+define('OKCLAYOUT_FIELD_NAME', 'okclayout_foundation_classes');
 
 /**
  * Implements hook_schema_alter()
@@ -8,14 +8,14 @@ define('okclayout_FIELD_NAME', 'okclayout_classes');
  * @param $schema
  */
 function okclayout_schema_alter(&$schema) {
-  $schema['block']['fields'][okclayout_FIELD_NAME] = _okclayout_field_definition();
+  $schema['block']['fields'][OKCLAYOUT_FIELD_NAME] = _okclayout_field_definition();
 }
 
 /**
  * Implements hook_install()
  */
 function okclayout_install() {
-  db_add_field('block', okclayout_FIELD_NAME, _okclayout_field_definition());
+  db_add_field('block', OKCLAYOUT_FIELD_NAME, _okclayout_field_definition());
   // set a heavy weight
   db_update('system')
     ->fields(array('weight' => 999))
@@ -27,7 +27,7 @@ function okclayout_install() {
  * Implements hook_uninstall().
  */
 function okclayout_uninstall() {
-  db_drop_field('block', okclayout_FIELD_NAME);
+  db_drop_field('block', OKCLAYOUT_FIELD_NAME);
 }
 
 /**
