@@ -10,39 +10,21 @@ It allows to place block quickly on foundation css grid, by specifying foundatio
 Edit block configuration and set foundation classes in drupal ini format, like this :
 
 ```
-   * = large-6 columns
-   <front> = small-12 columns
+   small-6 medium-6 large-12 columns
+
 ```
-
-Where "*' represents the targeted pages, and "large-6 columns" are foundations css classes you want
-to add to the block.
-
-You may also use your theme infofile to place your blocks on the grid, which is the recommened
-method as it allows to commit your work with your favourite VCS tool.
 
 MORE ON CONFIGURATION
 ---------------------
-
- foundation classes MUST be specified in drupal ini format in
- the textarea from block configuration page.
-```
-   * = large-12 columns
-   <front> = small-6 columns end
-   node/4/* = large-12 columns
-```
-
- key is the page targeted, and value is the foundation classes the block will use.
- "*" is a special wildcard meaning "for all pages".
 
  Additionnaly, you may use your theme info file to register your
  block grid informations, like this :
 
 ```
- okcfoundation_classes[block-15][*] = large-12 columns
- okcfoundation_classes[user-online][<front>] = large-1 columns
+ okclayout_block_classes[system-main] = large-12 columns
 ```
 
- Where "block-15" is "module-delta"; "*" is the targeted page and "large-12 columns" is foundation classes.
+ Where "block-15" is "module-delta"; and "large-12 columns" is foundation classes.
  module and delta are displayed in html classes (ex : for block-user-online, module is "user" and delta is "online"
  or in the block url configuration :
 
@@ -52,5 +34,12 @@ MORE ON CONFIGURATION
  page wins againts theme info file.
  Juste empty textarea to make theme info file active again for this block.
 
- Using themeinfo file is a nice way to version your grids layout; there is no easy
- way to deploy configuration saved in textarea.
+DIFFERENT GRIDS BY CONTEXT
+---------------------
+
+Drupal is not build in a way we may easily create different grid layout depending on the pages on context.
+running drush okc-layout, you can create automatically a very light subtheme of your current active theme.
+Using template.php, you can tell him on which contexts you want him to be active.
+This allows you to create different layout grids for your site; and to set blocks on different regions according to the context.
+
+
