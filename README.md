@@ -7,7 +7,7 @@ https://github.com/nyl-auster/okcdesign
 
 It allows to place block quickly on foundation css grid, by specifying foundation classes.
 
-Edit block configuration and set foundation classes in drupal ini format, like this :
+Edit block configuration and set foundation classes like this :
 
 ```
    small-6 medium-6 large-12 columns
