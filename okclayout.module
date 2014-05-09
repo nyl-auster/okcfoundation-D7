@@ -22,10 +22,26 @@
  *
  * Using themeinfo file is a nice way to version your grids layout; there is no easy
  * way to deploy configuration saved in textarea.
+ *
+ * Note that blocks will have the same classes, on all pages.
+ * If you need to move blocks, you may create a layout :
+ *
+ * This module implements a "trick" to use Drupal as a layout system;
+ * using subthemes.
+ *
+ * Example :
+ * typing drush okc-layout "homepage" will create and enable an empty subtheme named
+ * {yourDefaultTheme}_layout_homepage, with same regions than your current default active theme.
+ *
+ * It will contains a hook_okclayout_conditions();this subtheme will became the
+ * active theme each time this function return TRUE.
  */
 
 /**
  * Implements hook_custom_theme()
+ *
+ * Serve a different theme if a subtheme is a "layout" and
+ * its condition returns TRUE in current context.
  */
 function okclayout_custom_theme() {
   $layouts = okclayout_get_layouts(variable_get('theme_default'));
@@ -35,8 +51,9 @@ function okclayout_custom_theme() {
     // include template.php file if exists, so we can check if it implements
     // hook_okclayout_condition(). If file template.php does not exists, abort.
     $templatephp_file = str_replace($datas->name . '.info', 'template.php', $datas->filename);
-    include_once($templatephp_file);
     if (!is_readable($templatephp_file)) continue;
+
+    include_once($templatephp_file);
     $function = $theme_name. '_okclayout_condition';
 
     // hook_okclayout_condition does not exists, abort.
@@ -220,10 +237,8 @@ function okclayout_preprocess_block(&$vars) {
  * @return mixed
  */
 function okclayout_get_layouts($base_theme) {
-
   static $layouts = array();
   if ($layouts) return $layouts;
-
   $themes = list_themes();
   foreach ($themes as $theme_name => $theme) {
     if (!empty($theme->info['okclayout']) && (isset($theme->info['base theme']) && $theme->info['base theme'] == $base_theme)) {
