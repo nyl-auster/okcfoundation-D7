@@ -24,7 +24,7 @@ MORE ON CONFIGURATION
  okclayout_block_classes[system-main] = large-12 columns
 ```
 
- Where "block-15" is "module-delta"; and "large-12 columns" is foundation classes.
+ Where "system-main" is "{module_name}-{block_delta}"; and "large-12 columns" is foundation classes.
  module and delta are displayed in html classes (ex : for block-user-online, module is "user" and delta is "online"
  or in the block url configuration :
 
