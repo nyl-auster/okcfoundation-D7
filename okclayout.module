@@ -38,6 +38,21 @@
  */
 
 /**
+ * Implements hook_menu()
+ * @return array
+ */
+function okclayout_menu() {
+  $items = array();
+  $items['okclayout/autocomplete/foundation-classes'] = array(
+    'title' => 'Autocomplete for foundation classes',
+    'page callback' => '_okclayout_autocomplete_foundation_classes',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK
+  );
+  return $items;
+}
+
+/**
  * Implements hook_custom_theme()
  *
  * Serve a different theme if a subtheme is a "layout" and
@@ -144,14 +159,16 @@ function okclayout_form_alter(&$form, &$form_state, $form_id) {
  */
 function okclayout_block_expert_form(&$form, &$form_state, $block) {
   $form['settings']['okclayout_foundation_classes'] = array(
-    '#type' => 'textarea',
+    '#type' => 'textfield',
+    '#size' => 150,
+    '#autocomplete_path' =>  'okclayout/autocomplete/foundation-classes',
     '#title' => t('Foundation classes'),
     '#default_value' => isset($block->okclayout_foundation_classes) ? $block->okclayout_foundation_classes : '',
     '#description' => t('Set css foundation grid classes for this block. example: <br/>
       <strong>small-12 medium-8 large-12 columns</strong><br/>
       These classes will be added to html block classes'
     ),
-    '#weight' => 0,
+    '#weight' => -20,
   );
 }
 
@@ -246,4 +263,31 @@ function okclayout_get_layouts($base_theme) {
     }
   }
   return $layouts;
+}
+
+/**
+ * autocomplete helper
+ * $string = string for search
+ */
+function _okclayout_autocomplete_foundation_classes($string) {
+  $classes = array(
+    'small-12 columns' => 'small-12 columns (12 width on all screens)',
+    'small-12 large-6 columns' => 'small-12 large-6 columns (12 on small screens, 6 on medium and large screens)',
+    'small-12 large-8 columns' => 'small-12 large-8 columns (12 on small screens, 8 on medium and large screens)',
+    'small-12 large-4 columns' => 'small-12 large-4 columns (12 on small screens, 4 on medium and large screens)',
+    'small-12 medium-6 large-6 columns' => 'small-12 medium-6 large-3 columns (12 on small screens, 6 on medium screens and 3 on large screens)',
+    'small-3 small-centered' => 'small-3 small-centered (3 width centered on small screens)',
+    'small-9 small-centered large-uncentered columns' => 'small-9 small-centered large-uncentered columns (9 width centered only on small screens)',
+    'small-12 medium-push-6' => 'small-6 medium-push-6 (move to the 6th columns to the right on mediums screens)',
+    'small-12 medium-pull-6' => 'small-6 medium-push-6 (move to the 6th columns to the left on mediums screens)',
+  );
+  $matches = array();
+  foreach ($classes as $class => $help) {
+    if (strpos($class, $string) !== FALSE) {
+      $matches[$class] = $help;
+    }
+  }
+
+  // Return the result to the form in json
+  drupal_json_output($matches);
 }
