@@ -120,11 +120,11 @@ function okclayout_block_view($delta = '') {
       break;
     case 'site-breadcrumb':
       $block['subject'] = t('[OKC Layout] Breadcrumb');
-      $block['content'] = theme('breadcrumb', drupal_get_breadcrumb());
+      $block['content'] = theme('breadcrumb', array('breadcrumb' => drupal_get_breadcrumb()));
       break;
     case 'site-messages':
       $block['subject'] = t('[OKC Layout] Site messages');
-      $block['content'] = theme('status_messages', drupal_get_messages());
+      $block['content'] = theme('status_messages');
       break;
   }
   return $block;
