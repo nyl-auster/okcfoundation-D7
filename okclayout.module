@@ -85,19 +85,27 @@ function okclayout_custom_theme() {
 
 }
 
+/**
+ * Implements hook_block_info()
+ * @return mixed
+ */
 function okclayout_block_info() {
   // This example comes from node.module.
   $blocks['site-title'] = array(
     'info' => t('[OKC Layout] Display site title'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
   );
   $blocks['site-slogan'] = array(
     'info' => t('[OKC Layout] Display site slogan'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
   );
   $blocks['site-breadcrumb'] = array(
     'info' => t('[OKC Layout] Display breadcrumb'),
+    'cache' => DRUPAL_NO_CACHE,
   );
   $blocks['site-messages'] = array(
     'info' => t('[OKC Layout] Display site messages'),
+    'cache' => DRUPAL_NO_CACHE,
   );
   return $blocks;
 }
@@ -276,10 +284,10 @@ function _okclayout_autocomplete_foundation_classes($string) {
     'small-12 large-8 columns' => 'small-12 large-8 columns (12 on small screens, 8 on medium and large screens)',
     'small-12 large-4 columns' => 'small-12 large-4 columns (12 on small screens, 4 on medium and large screens)',
     'small-12 medium-6 large-6 columns' => 'small-12 medium-6 large-3 columns (12 on small screens, 6 on medium screens and 3 on large screens)',
-    'small-3 small-centered' => 'small-3 small-centered (3 width centered on small screens)',
+    'small-3 small-centered columns' => 'small-3 small-centered (3 width centered on small screens)',
     'small-9 small-centered large-uncentered columns' => 'small-9 small-centered large-uncentered columns (9 width centered only on small screens)',
-    'small-12 medium-push-6' => 'small-6 medium-push-6 (move to the 6th columns to the right on mediums screens)',
-    'small-12 medium-pull-6' => 'small-6 medium-push-6 (move to the 6th columns to the left on mediums screens)',
+    'small-12 medium-push-6 columns' => 'small-6 medium-push-6 columns (move to the 6th columns to the right on mediums screens)',
+    'small-12 medium-pull-6 columns' => 'small-6 medium-push-6 columns (move to the 6th columns to the left on mediums screens)',
   );
   $matches = array();
   foreach ($classes as $class => $help) {
